@@ -106,7 +106,6 @@
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
           </select>
         </div>
       </div>

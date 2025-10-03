@@ -46,7 +46,6 @@
           <select name="status" class="w-full border px-3 py-2 rounded">
             <option value="draft">Draft</option>
             <option value="active">Active</option>
-            <option value="archived">Archived</option>
           </select>
         </div>
 

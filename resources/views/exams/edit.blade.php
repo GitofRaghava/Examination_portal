@@ -47,7 +47,6 @@
           <select name="status" class="w-full border px-3 py-2 rounded">
             <option value="draft" {{ $exam->status == 'draft' ? 'selected' : '' }}>Draft</option>
             <option value="active" {{ $exam->status == 'active' ? 'selected' : '' }}>Active</option>
-            <option value="archived" {{ $exam->status == 'archived' ? 'selected' : '' }}>Archived</option>
           </select>
         </div>
 

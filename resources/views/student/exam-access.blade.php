@@ -4,41 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $exam->name }} - Examination Portal</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Use Inter font for a modern look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
     
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 text-center">
+    <!-- Main Card Container -->
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-auto transform hover:shadow-3xl transition duration-500 ease-in-out border border-gray-200">
+        
+        <!-- Header Section -->
+        <div class="bg-gradient-to-br from-blue-600 to-purple-700 text-white p-10 rounded-t-3xl text-center">
             <div class="mb-4">
-                <svg class="mx-auto h-16 w-16 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                <!-- Academic Icon (Book/Graduation Cap) -->
+                <svg class="mx-auto h-14 w-14 text-white opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M12 14l9-5-9-5-9 5 9 5z" />
+                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.05v-9.176l-.683 1.151l-.683-1.151V20.05a11.95 11.95 0 00-6.822-2.583A12.083 12.083 0 015.84 10.578L12 14z" />
                 </svg>
             </div>
-            <h1 class="text-2xl font-bold mb-2">{{ $exam->name }}</h1>
-            <p class="text-blue-100">Online Examination</p>
+            <h1 class="text-3xl font-extrabold mb-1">{{ $exam->name }}</h1>
+            <p class="text-blue-200 text-sm font-medium">Secure Online Examination Portal</p>
         </div>
 
-        <!-- Exam Info -->
-        <div class="p-8">
-            <div class="mb-8">
-                <h2 class="text-xl font-semibold mb-4 text-gray-800">Exam Information</h2>
+        <!-- Content Area -->
+        <div class="p-8 md:p-10">
+            <!-- Exam Info -->
+            <div class="mb-8 p-4 border border-blue-100 bg-blue-50 rounded-xl">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2 border-blue-200">Examination Summary</h2>
                 
                 <div class="space-y-3">
-                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span class="text-gray-600">📝 Total Marks:</span>
-                        <span class="font-semibold text-gray-800">{{ $exam->total_marks }}</span>
+                    <!-- Total Marks -->
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+                        <span class="text-gray-600 flex items-center"><span class="mr-2 text-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </span> Total Marks:</span>
+                        <span class="font-bold text-lg text-blue-700">{{ $exam->total_marks }}</span>
                     </div>
                     
-                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span class="text-gray-600">⏱️ Duration:</span>
-                        <span class="font-semibold text-gray-800">{{ $exam->duration_minutes }} minutes</span>
+                    <!-- Duration -->
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+                        <span class="text-gray-600 flex items-center"><span class="mr-2 text-purple-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </span> Duration:</span>
+                        <span class="font-bold text-lg text-purple-700">{{ $exam->duration_minutes }} min</span>
                     </div>
                     
-                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span class="text-gray-600">📊 Status:</span>
-                        <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
+                    <!-- Status -->
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+                        <span class="text-gray-600 flex items-center"><span class="mr-2 text-green-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        </span> Status:</span>
+                        <span class="inline-flex px-3 py-1 text-sm font-bold rounded-full bg-green-100 text-green-800">
                             {{ ucfirst($exam->status) }}
                         </span>
                     </div>
@@ -47,159 +69,130 @@
 
             <!-- Instructions -->
             <div class="mb-8">
-                <h3 class="text-lg font-semibold mb-3 text-gray-800">📋 Instructions</h3>
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-                    <ul class="text-sm text-gray-700 space-y-2">
-                        <li>• Fill in your details accurately before starting</li>
-                        <li>• You cannot pause the exam once started</li>
-                        <li>• Your answers are automatically saved</li>
-                        <li>• Submit before time expires to avoid data loss</li>
-                        <li>• Ensure stable internet connection throughout</li>
+                <h3 class="text-lg font-bold mb-3 text-gray-800 flex items-center">
+                    <span class="mr-2 text-yellow-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </span> Key Instructions
+                </h3>
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl shadow-inner">
+                    <ul class="text-sm text-gray-700 space-y-2 list-disc pl-5">
+                        <li>Fill in your details accurately to receive the **6-digit OTP**.</li>
+                        <li>**Proctoring is active**: Do not switch tabs or leave the browser window after starting.</li>
+                        <li>The exam timer **cannot be paused** once started.</li>
+                        <li>Ensure you have a **stable internet connection** before proceeding.</li>
                     </ul>
                 </div>
             </div>
 
             <!-- Error Messages -->
             @if(session('error'))
-                <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-                    <strong>Error:</strong> {{ session('error') }}
+                <div class="mb-6 bg-red-100 border border-red-500 text-red-700 px-4 py-3 rounded-lg font-medium">
+                    <strong>Attention:</strong> {{ session('error') }}
                 </div>
             @endif
 
             <!-- Student Details Form -->
-<form action="{{ route('student.exam.register', $exam->uuid) }}" method="POST" class="space-y-5">
-            @csrf
+            <form action="{{ route('student.exam.register', $exam->uuid) }}" method="POST" class="space-y-6">
+                @csrf
 
-            <!-- Hidden Exam ID -->
-            <input type="hidden" name="exam_id" value="{{ $exam->id }}">
+                <!-- Hidden Exam ID -->
+                <input type="hidden" name="exam_id" value="{{ $exam->id }}">
 
-            <!-- Candidate Name -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                <input type="text" name="candidate_name" required 
-                       value="{{ old('candidate_name') }}"
-                       placeholder="Enter your full name"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_name') border-red-500 @enderror">
-                @error('candidate_name')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+                <!-- Candidate Name -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="candidate_name">Full Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="candidate_name" id="candidate_name" required 
+                            value="{{ old('candidate_name') }}"
+                            placeholder="Enter your full name"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition @error('candidate_name') border-red-500 ring-red-100 @enderror">
+                    @error('candidate_name')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
-            <!-- Candidate Email -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                <input type="email" name="candidate_email" required 
-                       value="{{ old('candidate_email') }}"
-                       placeholder="Enter your email address"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_email') border-red-500 @enderror">
-                @error('candidate_email')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+                <!-- Candidate Email -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="candidate_email">Email Address <span class="text-red-500">*</span></label>
+                    <input type="email" name="candidate_email" id="candidate_email" required 
+                            value="{{ old('candidate_email') }}"
+                            placeholder="e.g., jane.doe@example.com"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition @error('candidate_email') border-red-500 ring-red-100 @enderror">
+                    @error('candidate_email')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
-            <!-- Candidate Contact (Optional) -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number (Optional)</label>
-                <input type="text" name="candidate_contact" 
-                       value="{{ old('candidate_contact') }}"
-                       placeholder="Enter your contact number"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_contact') border-red-500 @enderror">
-                @error('candidate_contact')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+                <!-- Contact and City in a single row for desktop, stacked on mobile -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Candidate Contact (Optional) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="candidate_contact">Contact Number (Optional)</label>
+                        <input type="text" name="candidate_contact" id="candidate_contact"
+                                value="{{ old('candidate_contact') }}"
+                                placeholder="Enter your contact number"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition @error('candidate_contact') border-red-500 ring-red-100 @enderror">
+                        @error('candidate_contact')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-            <!-- Candidate City (Optional) -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">City (Optional)</label>
-                <input type="text" name="candidate_city" 
-                       value="{{ old('candidate_city') }}"
-                       placeholder="Enter your city"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_city') border-red-500 @enderror">
-                @error('candidate_city')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+                    <!-- Candidate City (Optional) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="candidate_city">City (Optional)</label>
+                        <input type="text" name="candidate_city" id="candidate_city"
+                                value="{{ old('candidate_city') }}"
+                                placeholder="Enter your city"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition @error('candidate_city') border-red-500 ring-red-100 @enderror">
+                        @error('candidate_city')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
 
-            <!-- Consent Checkbox -->
-            <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
-                <input type="checkbox" id="consent" name="consent" required 
-                       class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                <label for="consent" class="text-sm text-gray-700">
-                    I understand the exam instructions and agree to follow the guidelines. I confirm that the information provided is accurate.
-                </label>
-            </div>
+                <!-- Consent Checkbox -->
+                <div class="flex items-start space-x-3 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                    <input type="checkbox" id="consent" name="consent" required 
+                            class="mt-1 h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded-md cursor-pointer">
+                    <label for="consent" class="text-sm text-gray-800 leading-relaxed">
+                        I have read and agree to the **examination instructions** and confirm that the information provided is accurate.
+                    </label>
+                </div>
 
-            <!-- Submit Button -->
-            <button type="submit" 
-                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                🚀 Register & Get OTP
-            </button>
-        </form>
+                <!-- Submit Button -->
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-extrabold text-lg 
+                                hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-[1.01] shadow-xl">
+                    <span class="flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                        Register & Send OTP
+                    </span>
+                </button>
+            </form>
         </div>
     </div>
 
-    <!-- Warning Modal for Back Button -->
-    <div id="back-warning" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl p-8 max-w-md mx-4">
-            <div class="text-center">
-                <div class="mb-4">
-                    <svg class="mx-auto h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold mb-2">Are you sure?</h3>
-                <p class="text-gray-600 mb-6">Going back will exit the exam. You'll need to start over.</p>
-                <div class="flex gap-3">
-                    <button onclick="hideBackWarning()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
-                        Stay Here
-                    </button>
-                    <button onclick="goBack()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                        Exit Exam
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Removed intrusive back-button warning JS logic for better pre-exam UX -->
+    
     <script>
-        // Prevent back button during exam
-        history.pushState(null, document.title, location.href);
-        window.addEventListener('popstate', function (event) {
-            showBackWarning();
-        });
-
-        function showBackWarning() {
-            document.getElementById('back-warning').classList.remove('hidden');
-        }
-
-        function hideBackWarning() {
-            document.getElementById('back-warning').classList.add('hidden');
-            history.pushState(null, document.title, location.href);
-        }
-
-        function goBack() {
-            window.history.back();
-        }
-
-        // Form validation
+        // Simple form submission feedback
         document.querySelector('form').addEventListener('submit', function(e) {
-            const name = document.querySelector('input[name="student_name"]').value.trim();
-            const email = document.querySelector('input[name="student_email"]').value.trim();
-            const consent = document.querySelector('input[name="consent"]').checked;
-
-            if (!name || !email || !consent) {
+            const consent = document.getElementById('consent').checked;
+            
+            if (!consent) {
+                // Since alert() is disabled, we'll use client-side visual feedback (like border-red-500 on form) 
+                // but the Laravel validation is the primary guard.
                 e.preventDefault();
-                alert('Please fill in all required fields and agree to the terms.');
+                document.getElementById('consent').focus();
+                // Add a temporary visual indicator if possible without alert
+                console.error('Please agree to the terms and conditions.');
                 return;
             }
 
-            // Show loading state
-            const button = document.querySelector('button[type="submit"]');
+            // Show loading state and disable button
+            const button = e.submitter; // Get the button that was clicked
             button.disabled = true;
-            button.innerHTML = '🔄 Starting Exam...';
+            button.innerHTML = 'Sending OTP... Please wait ⏳';
         });
     </script>
-
 </body>
 </html>

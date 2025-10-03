@@ -62,13 +62,19 @@ class StudentController extends Controller
         $request->validate([
             'exam_id' => 'required|exists:exams,id',
             'candidate_name' => 'required|string|max:255',
-            'candidate_email' => 'required|email|unique:students,candidate_email',
+            'candidate_email' => 'required|email',
             'candidate_contact' => 'nullable|string|max:15',
             'candidate_city' => 'nullable|string|max:255',
         ]);
 
         // ✅ Generate OTP
         $otp = rand(100000, 999999);
+        $existing = Student::where('exam_id', $request->exam_id)
+                   ->where('candidate_email', $request->candidate_email)
+                   ->first();
+if ($existing) {
+    $existing->delete();
+}
 
         // ✅ Create student record
         $student = Student::create([
@@ -220,7 +226,14 @@ public function submitExam(Request $request, $uuid)
     $studentSession = session("student_exam_{$uuid}");
     $exam = Exam::where('uuid', $uuid)->firstOrFail();
     $examId = $exam->id;
+
+    // ✅ Make sure we always have student_id
     $studentId = $studentSession['student_id'] ?? Session::get('student_id');
+
+    if (!$studentId) {
+        return redirect()->route('student.exam.access', $uuid)
+            ->with('error', 'Student session expired. Please re-register.');
+    }
 
     // Get all exam questions
     $allQuestions = DB::table('exam_questions')
@@ -228,9 +241,7 @@ public function submitExam(Request $request, $uuid)
         ->pluck('question_id')
         ->toArray();
 
-    // Get submitted answers
     $submittedAnswers = $request->input('answers', []);
-
     $finalAnswers = [];
 
     foreach ($allQuestions as $questionId) {
@@ -238,12 +249,11 @@ public function submitExam(Request $request, $uuid)
         $answerText = $answerData['answer_text'] ?? null;
         $chosenOptionIds = $answerData['chosen_option_ids'] ?? null;
 
-        // Handle multiple-choice (array)
         if (is_array($chosenOptionIds)) {
             $chosenOptionIds = json_encode($chosenOptionIds);
         }
 
-        // Save to DB
+        // ✅ Save only if student_id exists
         student_answer::updateOrCreate(
             [
                 'exam_id' => $examId,
@@ -256,30 +266,45 @@ public function submitExam(Request $request, $uuid)
             ]
         );
 
-        // Store in final answers (for session)
         $finalAnswers[$questionId] = [
             'answer_text' => $answerText,
             'chosen_option_ids' => $answerData['chosen_option_ids'] ?? []
         ];
     }
 
-    // Save answers + submitted_at in session
-    $studentSession['answers'] = $finalAnswers;
-    $studentSession['submitted_at'] = now();
-    session(["student_exam_{$uuid}" => $studentSession]);
+    // Store submission summary
+    $summary = [
+        'exam_name' => $exam->title,
+        'student_name' => $studentSession['name'] ?? 'N/A',
+        'student_email' => $studentSession['email'] ?? 'N/A',
+        'submitted_at' => now()->toDateTimeString(),
+        'total_questions' => count($allQuestions),
+        'attempted' => count(array_filter($finalAnswers, function ($ans) {
+            return !empty($ans['answer_text']) || !empty($ans['chosen_option_ids']);
+        })),
+        'unattempted' => count($allQuestions) - count(array_filter($finalAnswers, function ($ans) {
+            return !empty($ans['answer_text']) || !empty($ans['chosen_option_ids']);
+        })),
+        'answers' => $finalAnswers
+    ];
 
-    return redirect()->route('student.exam-submitted', ['uuid' => $uuid])
-                     ->with('success', 'Exam submitted successfully!');
+    // ✅ clear session + delete student now if you want
+    Session::forget(["student_exam_{$uuid}", 'student_id', 'student_email']);
+    Student::where('id', $studentId)->delete();
+
+    return view('student.exam-submitted', [
+        'summary' => $summary
+    ]);
 }
 
 public function examSubmitted($uuid)
 {
-   $studentSession = session("student_exam_{$uuid}");
+    $summary = session("exam_summary_{$uuid}");
 
     // Pass $uuid to the view
     return view('student.exam-submitted', [
         'uuid' => $uuid,
-        'studentSession' => $studentSession,
+        'summary' => $summary,
     ]);
 }
 
@@ -354,26 +379,32 @@ public function uploadProctorVideos(Request $request)
             $fullPath = $destination . $filename;
 
             try {
-                $file->move($destination, $filename); // move temp file to storage
+                $file->move($destination, $filename);
+
+                // ✅ Double check file actually exists and is not empty
+                if (!file_exists($fullPath) || filesize($fullPath) === 0) {
+                    throw new \Exception("File not saved or empty for $type video");
+                }
+
+                // ✅ Save DB record only if file is valid
+                $video = ProctorVideo::create([
+                    'student_id' => $request->student_id,
+                    'exam_id' => $request->exam_id,
+                    'type' => $type,
+                    'filename' => $filename,
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getClientMimeType(),
+                    'size' => $file->getSize(),
+                ]);
+
+                $uploaded[] = $video;
+
             } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
                     'message' => "Failed to save $type video: " . $e->getMessage()
-                ]);
+                ], 500);
             }
-
-            // Save DB record
-            $video = ProctorVideo::create([
-                'student_id' => $request->student_id,
-                'exam_id' => $request->exam_id,
-                'type' => $type,
-                'filename' => $filename,
-                'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getClientMimeType(),
-                'size' => $file->getSize(),
-            ]);
-
-            $uploaded[] = $video;
         }
     }
 
@@ -382,6 +413,7 @@ public function uploadProctorVideos(Request $request)
         'uploaded' => $uploaded
     ]);
 }
+
 
 
     private function getExamQuestions(int $examId)
