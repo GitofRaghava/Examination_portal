@@ -138,9 +138,9 @@
     <script>
         // Auto-refresh every 30 seconds if exam is in draft status
         @if($exam && $exam->status === 'draft')
-            setInterval(function() {
-                location.reload();
-            }, 30000);
+        setInterval(function() {
+            location.reload();
+        }, 30000);
         @endif
 
         // Helpful keyboard shortcuts

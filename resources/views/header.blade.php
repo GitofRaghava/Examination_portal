@@ -12,13 +12,7 @@
     <h1 class="text-xl font-bold">Examination Portal</h1>
     <div class="flex items-center gap-4">
       <span>Welcome, Admin</span>
-      <a href="{{ route('logout') }}"
-   onclick="event.preventDefault(); console.log('Logout clicked'); document.getElementById('logout-form').submit();"
-   class="bg-red-600 px-4 py-2 rounded hover:bg-red-700">
-   Logout
-</a>
-<form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-    @csrf
-</form>
+      <a href="{{ route('logout') }}" 
+         class="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Logout</a>
     </div>
   </header>

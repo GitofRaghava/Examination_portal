@@ -131,94 +131,47 @@
     </script>
   @endif
 
-  <!-- Enhanced Exams Section -->
-  <div class="bg-white rounded-xl shadow-lg p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-bold text-gray-800">Examination Management</h3>
-      <div class="text-sm text-gray-500">
-        Showing {{ $exams->count() }} exam(s)
-      </div>
-    </div>
-
-    @if($exams->isEmpty())
-      <div class="text-center py-12">
-        <div class="mb-4">
-          <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </div>
-        <h4 class="text-lg font-semibold text-gray-900 mb-2">No Exams Created</h4>
-        <p class="text-gray-600 mb-6">Get started by creating your first examination with intelligent question selection.</p>
-        <a href="{{ route('exams.create') }}" 
-           class="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
-          </svg>
-          Create First Exam
+  <!-- Exams Grid -->
+@if($exams->isEmpty())
+  <p class="text-gray-600 mt-4">No exams created yet.</p>
+@else
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    @foreach($exams as $exam)
+      <div class="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+        <!-- Exam Info -->
+        <a href="{{ route('exams.show', $exam->uuid) }}" class="block mb-4">
+          <h3 class="font-bold text-lg mb-2 truncate">{{ $exam->name }}</h3>
+          <p class="text-gray-500 mb-2">
+            Marks: {{ $exam->total_marks }} | Duration: {{ $exam->duration_minutes }} min
+          </p>
+          <span class="px-3 py-1 text-sm font-semibold rounded-full 
+            {{ $exam->status == 'active' ? 'bg-green-200 text-green-800' : ($exam->status == 'draft' ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-200 text-gray-800') }}">
+            {{ ucfirst($exam->status) }}
+          </span>
         </a>
+
+        <!-- Actions -->
+        <div class="flex space-x-2 mt-auto">
+          <a href="{{ route('exams.edit', $exam->uuid) }}" 
+            class="bg-yellow-500 text-white px-3 py-1 text-sm rounded hover:bg-yellow-600 transition">
+            Edit
+          </a>
+
+          <form action="{{ route('exams.destroy', $exam->uuid) }}" method="POST" 
+                onsubmit="return confirm('Are you sure you want to delete this exam?')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" 
+              class="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700 transition">
+              Delete
+            </button>
+          </form>
+        </div>
       </div>
-    @else
-      <div id="exams-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach($exams as $exam)
-          <div class="exam-card bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 relative" data-status="{{ $exam->status }}" data-name="{{ strtolower($exam->name) }}">
-            
-            <!-- Status Badge -->
-            <div class="absolute top-4 right-4">
-              <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full
-                {{ $exam->status == 'active' ? 'bg-green-100 text-green-800 ring-1 ring-green-600/20' : ($exam->status == 'draft' ? 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-600/20' : 'bg-gray-100 text-gray-800 ring-1 ring-gray-600/20') }}">
-                <span class="w-2 h-2 rounded-full mr-2 
-                  {{ $exam->status == 'active' ? 'bg-green-600' : ($exam->status == 'draft' ? 'bg-yellow-600' : 'bg-gray-600') }}"></span>
-                {{ ucfirst($exam->status) }}
-              </span>
-            </div>
-
-            <!-- Main Content -->
-            <a href="{{ route('exams.show', $exam->uuid) }}" class="block group">
-              <div class="mb-4">
-                <h4 class="font-bold text-lg text-gray-900 mb-2 group-hover:text-blue-600 transition line-clamp-2">{{ $exam->name }}</h4>
-                <p class="text-gray-600 text-sm mb-3">Created {{ $exam->created_at->diffForHumans() }}</p>
-              </div>
-
-              <!-- Exam Details -->
-              <div class="grid grid-cols-2 gap-4 mb-4">
-                <div class="text-center p-3 bg-blue-50 rounded-lg">
-                  <div class="text-2xl font-bold text-blue-600">{{ $exam->total_marks }}</div>
-                  <div class="text-xs text-blue-700 font-medium">Total Marks</div>
-                </div>
-                <div class="text-center p-3 bg-purple-50 rounded-lg">
-                  <div class="text-2xl font-bold text-purple-600">{{ $exam->duration_minutes }}</div>
-                  <div class="text-xs text-purple-700 font-medium">Minutes</div>
-                </div>
-              </div>
-
-              <!-- Question Count (will be loaded via AJAX) -->
-              <div class="text-center p-2 bg-gray-50 rounded-lg mb-4">
-                <div class="text-sm text-gray-600">
-                  <span class="font-medium exam-question-count" data-exam-id="{{ $exam->uuid }}">Loading...</span> questions
-                </div>
-              </div>
-            </a>
-
-            <!-- Action Buttons -->
-            <div class="flex gap-2 pt-4 border-t border-gray-200">
-              <a href="{{ route('exams.show', $exam->uuid) }}" 
-                 class="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-                ⚙️ Manage
-              </a>
-              <button onclick="previewExam('{{ $exam->uuid }}')" 
-                      class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition text-sm font-medium">
-                👁️ Preview
-              </button>
-              <button onclick="deleteExam('{{ $exam->uuid }}')" 
-                      class="px-4 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition text-sm">
-                🗑️
-              </button>
-            </div>
-          </div>
-        @endforeach
-      </div>
-    @endif
+    @endforeach
   </div>
+@endif
+
 </main>
 
 <!-- Question Management Modal -->

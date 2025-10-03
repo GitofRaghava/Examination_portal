@@ -1,21 +1,22 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Exam;
+use App\Models\Student;
+use App\Models\ProctorRecord;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use App\Mail\WelcomeEmail;
+use App\Models\student_answer;
+use Illuminate\Support\Facades\Log;
+use App\Models\ProctorVideo;
 
 class StudentController extends Controller
 {
-    /**
-     * Student exam access page - Enter details to start exam
-     * 
-     * @param string $uuid Exam UUID
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
-     */
     public function examAccess(string $uuid)
     {
         try {
@@ -28,7 +29,16 @@ class StudentController extends Controller
                     'exam' => $exam
                 ]);
             }
-            
+            if (session()->has('student_email')) {
+                $student = Student::where('email', session('student_email'))
+                            ->where('exam_id', $exam->id)
+                            ->first();
+
+        if ($student) {
+            // Student already registered → redirect to take exam
+            return redirect()->route('student.exam.take', $exam->uuid);
+        }
+    }
             // Check if student already has a session for this exam
             $studentId = session("student_exam_{$uuid}");
             if ($studentId) {
@@ -45,55 +55,106 @@ class StudentController extends Controller
         }
     }
     
-    /**
-     * Start exam - Student enters details and begins
-     * 
-     * @param Request $request
-     * @param string $uuid
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function startExam(Request $request, string $uuid)
+    
+     public function register(Request $request)
+    {
+        // ✅ Validate student input
+        $request->validate([
+            'exam_id' => 'required|exists:exams,id',
+            'candidate_name' => 'required|string|max:255',
+            'candidate_email' => 'required|email|unique:students,candidate_email',
+            'candidate_contact' => 'nullable|string|max:15',
+            'candidate_city' => 'nullable|string|max:255',
+        ]);
+
+        // ✅ Generate OTP
+        $otp = rand(100000, 999999);
+
+        // ✅ Create student record
+        $student = Student::create([
+            'exam_id' => $request->exam_id,
+            'candidate_name' => $request->candidate_name,
+            'candidate_email' => $request->candidate_email,
+            'candidate_contact' => $request->candidate_contact,
+            'candidate_city' => $request->candidate_city,
+        ]);
+
+        // ✅ Store student ID in session for OTP verification
+        session(['student_email' => $student->email]);
+        Session::put('otp', $otp);
+        Session::put('student_id', $student->id);
+
+        // ✅ Get exam UUID for session key
+        $exam = Exam::find($request->exam_id);
+        $uuid = $exam ? $exam->uuid : null;
+
+        // ✅ Create student session for exam
+        $studentSession = [
+            'name' => $student->candidate_name,
+            'email' => $student->candidate_email,
+            'student_id' => $student->id,
+            'exam_uuid' => $uuid,
+            'start_time' => now()->toDateTimeString(),
+            'answers' => [],
+            'current_question' => 1
+        ];
+
+        if ($uuid) {
+            session(["student_exam_{$uuid}" => $studentSession]);
+        }
+
+        // ✅ Prepare email details
+        $studentDetails = [
+            'name' => $student->candidate_name,
+            'email' => $student->candidate_email,
+            'city' => $student->candidate_city,
+            'contact' => $student->candidate_contact,
+            'otp' => $otp,
+        ];
+
+        // ✅ Send OTP mail
+        Mail::to($student->candidate_email)->send(new WelcomeEmail($studentDetails));
+
+        // ✅ Redirect to OTP verification page
+        return redirect()->route('verify-otp')
+                         ->with('success', 'OTP has been sent to your email!');
+    }
+
+    public function verifyOtp(Request $request)
     {
         $request->validate([
-            'student_name' => 'required|string|max:255',
-            'student_email' => 'required|email|max:255',
-            'student_id' => 'nullable|string|max:100'
+            'otp' => 'required|numeric',
         ]);
-        
-        try {
-            $exam = Exam::where('uuid', $uuid)->firstOrFail();
-            
-            // Check if exam is still active
-            if ($exam->status !== 'active') {
-                return back()->with('error', 'This exam is no longer available.');
+
+        $storedOtp = Session::get('otp');
+
+        if ($request->otp == $storedOtp) {
+            $studentId = Session::get('student_id');
+            $student = Student::find($studentId);
+
+            if ($student instanceof \Illuminate\Contracts\Auth\Authenticatable) {
+            // Clear OTP and student_id, but keep exam_id
+            Session::forget(['otp', 'student_id']);
+                return back()->with('error', 'Student not found or invalid.');
             }
-            
-            // Create student session
-            $studentSession = [
-                'name' => $request->student_name,
-                'email' => $request->student_email,
-                'student_id' => $request->student_id,
-                'exam_uuid' => $uuid,
-                'start_time' => now()->toDateTimeString(),
-                'answers' => [],
-                'current_question' => 1
-            ];
-            
-            session(["student_exam_{$uuid}" => $studentSession]);
-            
-            return redirect()->route('student.exam.take', $uuid);
-            
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error starting exam. Please try again.');
+
+            // Clear OTP and user_id, but keep exam_id
+            Session::forget(['otp', 'student_id']);
+
+            // Get exam UUID from student record
+            $exam = Exam::find($student->exam_id);
+            if (!$exam) {
+                return back()->with('error', 'Exam not found.');
+            }
+            return redirect()->route('student.exam.take', $exam->uuid)->with('success', 'Verified! Start your exam.');
+        } else {
+            return back()->with('error', 'Invalid OTP. Try again.');
         }
     }
-    
-    /**
-     * Take exam - Main exam interface
-     * 
-     * @param string $uuid
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
-     */
+     public function showVerifyForm()
+    {
+        return view('verify-otp');  // We'll create this view
+    }
     public function takeExam(string $uuid)
     {
         try {
@@ -111,7 +172,7 @@ class StudentController extends Controller
             $currentTime = now();
             
             // Debug: Log time information but don't fail the exam yet
-            \Log::info("Exam Time Check (DEBUG MODE)", [
+            Log::info("Exam Time Check (DEBUG MODE)", [
                 'exam_uuid' => $uuid,
                 'start_time' => $startTime->toDateTimeString(),
                 'current_time' => $currentTime->toDateTimeString(),
@@ -124,14 +185,14 @@ class StudentController extends Controller
                 $timeElapsedSeconds = $startTime->diffInSeconds($currentTime);
                 $timeElapsedMinutes = floor($timeElapsedSeconds / 60);
                 
-                \Log::info("Time Calculation (DEBUG MODE)", [
+                Log::info("Time Calculation (DEBUG MODE)", [
                     'elapsed_seconds' => $timeElapsedSeconds,
                     'elapsed_minutes' => $timeElapsedMinutes,
                     'exam_duration' => $exam->duration_minutes,
                     'would_expire' => $timeElapsedMinutes >= $exam->duration_minutes
                 ]);
             } else {
-                \Log::warning("Current time is before start time!", [
+                Log::warning("Current time is before start time!", [
                     'start_time' => $startTime->toDateTimeString(),
                     'current_time' => $currentTime->toDateTimeString()
                 ]);
@@ -154,112 +215,179 @@ class StudentController extends Controller
         }
     }
     
-    /**
-     * Save answer - AJAX endpoint for auto-save
-     * 
-     * @param Request $request
-     * @param string $uuid
-     * @return JsonResponse
-     */
-    public function saveAnswer(Request $request, string $uuid): JsonResponse
-    {
-        try {
-            $studentSession = session("student_exam_{$uuid}");
-            if (!$studentSession) {
+public function submitExam(Request $request, $uuid)
+{
+    $studentSession = session("student_exam_{$uuid}");
+    $exam = Exam::where('uuid', $uuid)->firstOrFail();
+    $examId = $exam->id;
+    $studentId = $studentSession['student_id'] ?? Session::get('student_id');
+
+    // Get all exam questions
+    $allQuestions = DB::table('exam_questions')
+        ->where('exam_id', $examId)
+        ->pluck('question_id')
+        ->toArray();
+
+    // Get submitted answers
+    $submittedAnswers = $request->input('answers', []);
+
+    $finalAnswers = [];
+
+    foreach ($allQuestions as $questionId) {
+        $answerData = $submittedAnswers[$questionId] ?? [];
+        $answerText = $answerData['answer_text'] ?? null;
+        $chosenOptionIds = $answerData['chosen_option_ids'] ?? null;
+
+        // Handle multiple-choice (array)
+        if (is_array($chosenOptionIds)) {
+            $chosenOptionIds = json_encode($chosenOptionIds);
+        }
+
+        // Save to DB
+        student_answer::updateOrCreate(
+            [
+                'exam_id' => $examId,
+                'question_id' => $questionId,
+                'student_id' => $studentId,
+            ],
+            [
+                'answer_text' => $answerText,
+                'chosen_option_ids' => $chosenOptionIds
+            ]
+        );
+
+        // Store in final answers (for session)
+        $finalAnswers[$questionId] = [
+            'answer_text' => $answerText,
+            'chosen_option_ids' => $answerData['chosen_option_ids'] ?? []
+        ];
+    }
+
+    // Save answers + submitted_at in session
+    $studentSession['answers'] = $finalAnswers;
+    $studentSession['submitted_at'] = now();
+    session(["student_exam_{$uuid}" => $studentSession]);
+
+    return redirect()->route('student.exam-submitted', ['uuid' => $uuid])
+                     ->with('success', 'Exam submitted successfully!');
+}
+
+public function examSubmitted($uuid)
+{
+   $studentSession = session("student_exam_{$uuid}");
+
+    // Pass $uuid to the view
+    return view('student.exam-submitted', [
+        'uuid' => $uuid,
+        'studentSession' => $studentSession,
+    ]);
+}
+
+
+//     public function uploadProctorVideos(Request $request)
+// {
+
+//     Log::info('UploadProctorVideos called', [
+//         'student_id' => $request->student_id,
+//         'exam_id' => $request->exam_id,
+//         'camera_present' => $request->hasFile('camera_video'),
+//         'screen_present' => $request->hasFile('screen_video'),
+//         'camera_size' => $request->file('camera_video')?->getSize(),
+//         'screen_size' => $request->file('screen_video')?->getSize(),
+//     ]);
+//     $request->validate([
+//         'camera_video' => 'required|file|mimes:webm,mp4|max:512000', // 500 MB
+// 'screen_video' => 'required|file|mimes:webm,mp4|max:512000',
+//         'exam_id' => 'required|exists:exams,id',
+//         'student_id' => 'required|exists:students,id',
+//     ]);
+
+//     $cameraPath = $request->file('camera_video')->store('proctor_videos/camera', 'public');
+//     $screenPath = $request->file('screen_video')->store('proctor_videos/screen', 'public');
+
+//     $record = ProctorRecord::create([
+//         'student_id' => $request->student_id,
+//         'exam_id' => $request->exam_id,
+//         'camera_video_path' => $cameraPath,
+//         'screen_video_path' => $screenPath,
+//     ]);
+
+//      Log::info("Proctoring uploaded", [
+//         'student_id' => $record->student_id,
+//         'exam_id' => $record->exam_id,
+//         'camera_path' => $cameraPath,
+//         'screen_path' => $screenPath,
+//     ]);
+
+//     return response()->json([
+//         'success' => true,
+//         'message' => 'Proctoring videos uploaded successfully!',
+//     ]);
+// }
+public function uploadProctorVideos(Request $request)
+{
+    $request->validate([
+        'camera_video' => 'nullable|mimes:webm,mp4,mov|max:51200',
+        'screen_video' => 'nullable|mimes:webm,mp4,mov|max:51200',
+        'student_id' => 'required|exists:students,id',
+        'exam_id' => 'required|exists:exams,id',
+    ]);
+
+    $uploaded = [];
+
+    $videos = [
+        'camera_video' => 'camera',
+        'screen_video' => 'screen',
+    ];
+
+    foreach ($videos as $inputName => $type) {
+        if ($request->hasFile($inputName)) {
+            $file = $request->file($inputName);
+
+            // Ensure folder exists
+            $destination = storage_path('app/public/proctor_videos/');
+            if (!file_exists($destination)) {
+                mkdir($destination, 0775, true);
+            }
+
+            $filename = time() . '_' . $inputName . '.' . $file->getClientOriginalExtension();
+            $fullPath = $destination . $filename;
+
+            try {
+                $file->move($destination, $filename); // move temp file to storage
+            } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Session expired. Please restart the exam.'
-                ], 401);
+                    'message' => "Failed to save $type video: " . $e->getMessage()
+                ]);
             }
-            
-            $questionId = $request->input('question_id');
-            $answer = $request->input('answer');
-            
-            // Update answers in session
-            $studentSession['answers'][$questionId] = [
-                'answer' => $answer,
-                'saved_at' => now()->toISOString(),
-                'time_spent' => $request->input('time_spent', 0)
-            ];
-            
-            session(["student_exam_{$uuid}" => $studentSession]);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Answer saved successfully',
-                'saved_at' => now()->format('H:i:s')
+
+            // Save DB record
+            $video = ProctorVideo::create([
+                'student_id' => $request->student_id,
+                'exam_id' => $request->exam_id,
+                'type' => $type,
+                'filename' => $filename,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
             ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error saving answer: ' . $e->getMessage()
-            ], 500);
+
+            $uploaded[] = $video;
         }
     }
-    
-    /**
-     * Submit exam - Final submission
-     * 
-     * @param Request $request
-     * @param string $uuid
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
-     */
-    public function submitExam(Request $request, string $uuid)
-    {
-        try {
-            $studentSession = session("student_exam_{$uuid}");
-            if (!$studentSession) {
-                return redirect()->route('student.exam.access', $uuid)
-                    ->with('error', 'Session not found. Please restart the exam.');
-            }
-            
-            $exam = Exam::where('uuid', $uuid)->firstOrFail();
-            
-            // Calculate exam results
-            $results = $this->calculateResults($exam->id, $studentSession['answers']);
-            
-            // Store submission (you could save to database here)
-            $submission = [
-                'student' => [
-                    'name' => $studentSession['name'],
-                    'email' => $studentSession['email'],
-                    'student_id' => $studentSession['student_id']
-                ],
-                'exam' => [
-                    'name' => $exam->name,
-                    'uuid' => $exam->uuid,
-                    'total_marks' => $exam->total_marks,
-                    'duration_minutes' => $exam->duration_minutes
-                ],
-                'submission' => [
-                    'start_time' => $studentSession['start_time'],
-                    'submit_time' => now(),
-                    'answers' => $studentSession['answers'],
-                    'results' => $results
-                ]
-            ];
-            
-            // Clear student session
-            session()->forget("student_exam_{$uuid}");
-            
-            return view('student.exam-submitted', compact('submission', 'exam'));
-            
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error submitting exam: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Get exam questions with options
-     * 
-     * @param int $examId
-     * @return \Illuminate\Support\Collection
-     */
+
+    return response()->json([
+        'success' => true,
+        'uploaded' => $uploaded
+    ]);
+}
+
+
     private function getExamQuestions(int $examId)
     {
         $questions = DB::table('exam_questions')
-            ->join('questions', 'exam_questions.question_id', '=', 'questions.id')
+            ->leftJoin('questions', 'exam_questions.question_id', '=', 'questions.id')
             ->where('exam_questions.exam_id', $examId)
             ->select(
                 'questions.*',
@@ -281,135 +409,4 @@ class StudentController extends Controller
         return $questions;
     }
     
-    /**
-     * Calculate exam results
-     * 
-     * @param int $examId
-     * @param array $answers
-     * @return array
-     */
-    private function calculateResults(int $examId, array $answers): array
-    {
-        $questions = DB::table('exam_questions')
-            ->join('questions', 'exam_questions.question_id', '=', 'questions.id')
-            ->where('exam_questions.exam_id', $examId)
-            ->select('questions.*')
-            ->get();
-        
-        $totalMarks = 0;
-        $earnedMarks = 0;
-        $correct = 0;
-        $incorrect = 0;
-        $unanswered = 0;
-        
-        foreach ($questions as $question) {
-            $totalMarks += $question->marks;
-            
-            if (!isset($answers[$question->id])) {
-                $unanswered++;
-                continue;
-            }
-            
-            $studentAnswer = $answers[$question->id]['answer'];
-            
-            if (in_array($question->type, ['mcq_single', 'mcq_multiple'])) {
-                // Get correct answers
-                $correctAnswers = DB::table('question_options')
-                    ->where('question_id', $question->id)
-                    ->where('is_correct', true)
-                    ->pluck('id')
-                    ->toArray();
-                
-                if ($question->type === 'mcq_single') {
-                    if (in_array($studentAnswer, $correctAnswers)) {
-                        $correct++;
-                        $earnedMarks += $question->marks;
-                    } else {
-                        $incorrect++;
-                    }
-                } else { // mcq_multiple
-                    $studentAnswerArray = is_array($studentAnswer) ? $studentAnswer : [$studentAnswer];
-                    
-                    // Perfect match required for multiple choice
-                    if (array_diff($correctAnswers, $studentAnswerArray) === [] && 
-                        array_diff($studentAnswerArray, $correctAnswers) === []) {
-                        $correct++;
-                        $earnedMarks += $question->marks;
-                    } else {
-                        $incorrect++;
-                    }
-                }
-            } else {
-                // Descriptive questions - for now, give full marks (manual checking needed)
-                if (!empty(trim($studentAnswer))) {
-                    $earnedMarks += $question->marks;
-                }
-            }
-        }
-        
-        return [
-            'total_questions' => $questions->count(),
-            'answered' => $correct + $incorrect,
-            'unanswered' => $unanswered,
-            'correct' => $correct,
-            'incorrect' => $incorrect,
-            'total_marks' => $totalMarks,
-            'earned_marks' => $earnedMarks,
-            'percentage' => $totalMarks > 0 ? round(($earnedMarks / $totalMarks) * 100, 2) : 0
-        ];
-    }
-    
-    /**
-     * Get remaining time - AJAX endpoint
-     * 
-     * @param string $uuid
-     * @return JsonResponse
-     */
-    public function getRemainingTime(string $uuid): JsonResponse
-    {
-        try {
-            $studentSession = session("student_exam_{$uuid}");
-            if (!$studentSession) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Session not found'
-                ], 404);
-            }
-            
-            $exam = Exam::where('uuid', $uuid)->firstOrFail();
-            $startTime = \Carbon\Carbon::parse($studentSession['start_time']);
-            $currentTime = now();
-            
-            // Calculate remaining time properly
-            $timeElapsedSeconds = 0;
-            $remainingSeconds = $exam->duration_minutes * 60;
-            
-            if ($currentTime->greaterThanOrEqualTo($startTime)) {
-                // Use seconds for precise calculation
-                $timeElapsedSeconds = $startTime->diffInSeconds($currentTime);
-                $timeElapsedMinutes = floor($timeElapsedSeconds / 60);
-                $remainingMinutes = max(0, $exam->duration_minutes - $timeElapsedMinutes);
-                
-                // Also calculate remaining seconds for more accurate display
-                $remainingSeconds = max(0, ($exam->duration_minutes * 60) - $timeElapsedSeconds);
-            } else {
-                // If current time is before start time, full duration is remaining
-                $remainingMinutes = $exam->duration_minutes;
-            }
-            
-            return response()->json([
-                'success' => true,
-                'remaining_minutes' => $remainingMinutes,
-                'remaining_seconds' => $remainingSeconds,
-                'elapsed_seconds' => $timeElapsedSeconds,
-                'time_up' => $remainingMinutes <= 0
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error getting time: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 }

@@ -67,58 +67,75 @@
             @endif
 
             <!-- Student Details Form -->
-            <form action="{{ route('student.exam.start', $exam->uuid) }}" method="POST" class="space-y-4">
-                @csrf
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                    <input type="text" name="student_name" required 
-                           value="{{ old('student_name') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('student_name') border-red-500 @enderror"
-                           placeholder="Enter your full name">
-                    @error('student_name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+<form action="{{ route('student.exam.register', $exam->uuid) }}" method="POST" class="space-y-5">
+            @csrf
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                    <input type="email" name="student_email" required 
-                           value="{{ old('student_email') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('student_email') border-red-500 @enderror"
-                           placeholder="Enter your email address">
-                    @error('student_email')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+            <!-- Hidden Exam ID -->
+            <input type="hidden" name="exam_id" value="{{ $exam->id }}">
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Student ID (Optional)</label>
-                    <input type="text" name="student_id" 
-                           value="{{ old('student_id') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('student_id') border-red-500 @enderror"
-                           placeholder="Enter your student ID (if applicable)">
-                    @error('student_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+            <!-- Candidate Name -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <input type="text" name="candidate_name" required 
+                       value="{{ old('candidate_name') }}"
+                       placeholder="Enter your full name"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_name') border-red-500 @enderror">
+                @error('candidate_name')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
 
-                <!-- Consent Checkbox -->
-                <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
-                    <input type="checkbox" id="consent" required 
-                           class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label for="consent" class="text-sm text-gray-700">
-                        I understand the exam instructions and agree to follow the examination guidelines. 
-                        I confirm that the information provided is accurate.
-                    </label>
-                </div>
+            <!-- Candidate Email -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                <input type="email" name="candidate_email" required 
+                       value="{{ old('candidate_email') }}"
+                       placeholder="Enter your email address"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_email') border-red-500 @enderror">
+                @error('candidate_email')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
 
-                <!-- Start Button -->
-                <button type="submit" 
-                        class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                    🚀 Start Examination
-                </button>
-            </form>
+            <!-- Candidate Contact (Optional) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number (Optional)</label>
+                <input type="text" name="candidate_contact" 
+                       value="{{ old('candidate_contact') }}"
+                       placeholder="Enter your contact number"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_contact') border-red-500 @enderror">
+                @error('candidate_contact')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Candidate City (Optional) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">City (Optional)</label>
+                <input type="text" name="candidate_city" 
+                       value="{{ old('candidate_city') }}"
+                       placeholder="Enter your city"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('candidate_city') border-red-500 @enderror">
+                @error('candidate_city')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Consent Checkbox -->
+            <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                <input type="checkbox" id="consent" name="consent" required 
+                       class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="consent" class="text-sm text-gray-700">
+                    I understand the exam instructions and agree to follow the guidelines. I confirm that the information provided is accurate.
+                </label>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
+                🚀 Register & Get OTP
+            </button>
+        </form>
         </div>
     </div>
 
