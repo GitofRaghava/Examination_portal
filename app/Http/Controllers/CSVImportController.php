@@ -44,8 +44,8 @@ class CSVImportController extends Controller
             // to check how many qns were successfully imported, skipped, errors
             $importStats = [
                 'total_rows' => count($csvData),
-                'imported' => 0,
-                'skipped' => 0,
+                'imported' => 0,  
+                'skipped' => 0,   
                 'errors' => []
             ];
 
@@ -97,7 +97,7 @@ class CSVImportController extends Controller
         }
 
         // Parse options for MCQ questions
-        $options = [];
+        $options = [ ];
         if (in_array($data['type'], ['mcq_single', 'mcq_multiple'])) { // MCQ types for options
             for ($i = 1; $i <= 6; $i++) { // Support up to 6 options
                 $optionKey = "option_{$i}"; // option key

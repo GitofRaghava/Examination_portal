@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\CSVImportController;
 use App\Http\Controllers\StudentController;
+use App\Models\Student;
 
 Route::get('/', function () {
     return view('login');
@@ -24,8 +25,11 @@ Route::middleware('web')->group(function () {
     Route::post('/exams', [ExamController::class, 'store'])->name('exams.store');
     Route::get('/exams/{uuid}', [ExamController::class, 'show'])->name('exams.show');
     Route::delete('/exams/{uuid}', [ExamController::class, 'destroy'])->name('exams.destroy'); 
-    Route::delete('/exams/{uuid}/with-questions', [ExamController::class, 'destroyWithQuestions'])->name('exams.destroy.with.questions');
-    
+    Route::get('/exams/{uuid}/edit', [ExamController::class, 'edit'])->name('exams.edit');
+Route::put('/exams/{uuid}', [ExamController::class, 'update'])->name('exams.update');
+
+    Route::get('/verify-otp', [StudentController::class, 'showVerifyForm'])->name('verify.form');
+    Route::post('/verify-otp', [StudentController::class, 'verifyOtp'])->name('verify-otp');
     // NEW STEP 4 ROUTES - Exam Management
     Route::post('/exams/{uuid}/regenerate', [ExamController::class, 'regenerate'])->name('exams.regenerate');
     Route::get('/exams/{uuid}/questions', [ExamController::class, 'getQuestions'])->name('exams.questions');
@@ -44,10 +48,15 @@ Route::middleware('web')->group(function () {
 
 // STEP 6 - Student Exam Taking Routes (Public - No Admin Authentication Required)
 Route::prefix('exam')->middleware('web')->group(function () {
+    Route::post('/{uuid}/register', [StudentController::class, 'register']) ->name('student.exam.register');
     Route::get('/{uuid}', [StudentController::class, 'examAccess'])->name('student.exam.access');
-    Route::post('/{uuid}/start', [StudentController::class, 'startExam'])->name('student.exam.start');
     Route::get('/{uuid}/take', [StudentController::class, 'takeExam'])->name('student.exam.take');
-    Route::post('/{uuid}/save-answer', [StudentController::class, 'saveAnswer'])->name('student.exam.save-answer');
-    Route::post('/{uuid}/submit', [StudentController::class, 'submitExam'])->name('student.exam.submit');
-    Route::get('/{uuid}/time', [StudentController::class, 'getRemainingTime'])->name('student.exam.time');
+    Route::post('/{uuid}/save-answer', [StudentController::class, 'saveAnswer'])->name('exam.saveAnswer');
+Route::post('/{uuid}/submit', [StudentController::class, 'submitExam'])->name('exam.submit');
+Route::get('/{uuid}/submitted', [StudentController::class, 'examSubmitted'])->name('student.exam-submitted');
+Route::post('/{uuid}/upload-proctor-videos', [StudentController::class, 'uploadProctorVideos'])
+    ->name('upload.proctor.videos');
+
 });
+
+    

@@ -55,7 +55,30 @@ class ExamController extends Controller
 
         return redirect()->route('dashboard')->with('success', 'Exam created successfully!');
     }
-    
+     
+    // Show the form to edit an exam
+public function edit($uuid)
+{
+    $exam = Exam::where('uuid', $uuid)->firstOrFail();
+    return view('exams.edit', compact('exam'));
+}
+
+// Update the exam
+public function update(Request $request, $uuid)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'total_marks' => 'required|integer|min:1',
+        'duration_minutes' => 'required|integer|min:1',
+        'status' => 'required|in:draft,active,archived'
+    ]);
+
+    $exam = Exam::where('uuid', $uuid)->firstOrFail();
+    $exam->update($request->all());
+
+    return redirect()->route('dashboard')->with('success', 'Exam updated successfully!');
+}
+
 
     // Show exam detail (page to import CSV)
     public function show($uuid)
