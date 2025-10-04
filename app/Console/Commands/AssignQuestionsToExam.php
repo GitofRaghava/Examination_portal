@@ -53,23 +53,50 @@ class AssignQuestionsToExam extends Command
             $filters = [];
             $examName = strtolower($exam->name);
             
-            // Automatically detect subject from exam name
+            // Enhanced subject detection from exam name
             if (str_contains($examName, 'python')) {
                 $filters['tags'] = 'python';
+                $this->line('🐍 Detected Python exam - filtering for Python questions only');
             } elseif (str_contains($examName, 'php')) {
                 $filters['tags'] = 'php';
+                $this->line('🐘 Detected PHP exam - filtering for PHP questions only');
+            } elseif (str_contains($examName, 'node') || str_contains($examName, 'nodejs')) {
+                $filters['tags'] = 'nodejs';
+                $this->line('🟢 Detected Node.js exam - filtering for Node.js questions only');
             } elseif (str_contains($examName, 'javascript') || str_contains($examName, 'js')) {
                 $filters['tags'] = 'javascript';
-            } elseif (str_contains($examName, 'java')) {
+                $this->line('🟡 Detected JavaScript exam - filtering for JavaScript questions only');
+            } elseif (str_contains($examName, 'java') && !str_contains($examName, 'javascript')) {
                 $filters['tags'] = 'java';
+                $this->line('☕ Detected Java exam - filtering for Java questions only');
+            } elseif (str_contains($examName, 'sql') || str_contains($examName, 'database')) {
+                $filters['tags'] = 'sql';
+                $this->line('🗄️ Detected SQL/Database exam - filtering for SQL questions only');
+            } elseif (str_contains($examName, 'c++') || str_contains($examName, 'dsa') || str_contains($examName, 'data structures')) {
+                $filters['tags'] = 'dsa';
+                $this->line('⚡ Detected C++/DSA exam - filtering for DSA questions only');
+            } else {
+                $this->line('🔍 No specific subject detected - using all available questions');
             }
-            // Add more subjects as needed
             
             $result = $questionSelector->selectQuestions($exam->total_marks, $filters);
             
             if (!$result['success'] || empty($result['questions'])) {
                 $this->error('❌ No questions could be selected for this exam');
                 $this->line('Reason: ' . ($result['message'] ?? 'Unknown error'));
+                
+                if (!empty($filters['tags'])) {
+                    $this->line('');
+                    $this->line('💡 SOLUTION: Import a CSV file containing ' . strtoupper($filters['tags']) . ' questions first');
+                    $this->line('   The exam "' . $exam->name . '" requires ' . $filters['tags'] . '-specific questions');
+                    $this->line('   Currently no ' . $filters['tags'] . ' questions exist in the database');
+                    $this->line('');
+                    $this->line('📝 Steps to fix:');
+                    $this->line('   1. Create/prepare a CSV file with ' . $filters['tags'] . ' questions');
+                    $this->line('   2. Import it via: Admin Dashboard → Import Questions');
+                    $this->line('   3. Re-run: php artisan exam:assign-questions ' . $exam->id);
+                }
+                
                 return 1;
             }
             

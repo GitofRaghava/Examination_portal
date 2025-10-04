@@ -24,6 +24,7 @@ Route::middleware('web')->group(function () {
     Route::post('/exams', [ExamController::class, 'store'])->name('exams.store');
     Route::get('/exams/{uuid}', [ExamController::class, 'show'])->name('exams.show');
     Route::delete('/exams/{uuid}', [ExamController::class, 'destroy'])->name('exams.destroy'); 
+    Route::delete('/exams/{uuid}/with-questions', [ExamController::class, 'destroyWithQuestions'])->name('exams.destroy.with.questions');
     
     // NEW STEP 4 ROUTES - Exam Management
     Route::post('/exams/{uuid}/regenerate', [ExamController::class, 'regenerate'])->name('exams.regenerate');

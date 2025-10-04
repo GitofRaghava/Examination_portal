@@ -209,10 +209,22 @@
                       class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition text-sm font-medium">
                 👁️ Preview
               </button>
-              <button onclick="deleteExam('{{ $exam->uuid }}')" 
-                      class="px-4 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition text-sm">
-                🗑️
-              </button>
+              <div class="relative">
+                <button onclick="showDeleteOptions('{{ $exam->uuid }}')" 
+                        class="px-4 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition text-sm relative">
+                  🗑️ ▼
+                </button>
+                <div id="delete-menu-{{ $exam->uuid }}" class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                  <button onclick="deleteExam('{{ $exam->uuid }}', false)" 
+                          class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg">
+                    🗑️ Delete Exam Only
+                  </button>
+                  <button onclick="deleteExam('{{ $exam->uuid }}', true)" 
+                          class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg border-t">
+                    💥 Delete Exam + Questions
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         @endforeach
@@ -701,11 +713,34 @@ function previewExam(uuid) {
     window.open(`/exams/${uuid}/preview`, '_blank');
 }
 
-function deleteExam(uuid) {
-    if (confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
+function showDeleteOptions(uuid) {
+    // Hide all other menus first
+    document.querySelectorAll('[id^="delete-menu-"]').forEach(menu => menu.classList.add('hidden'));
+    
+    // Show this menu
+    const menu = document.getElementById(`delete-menu-${uuid}`);
+    menu.classList.toggle('hidden');
+    
+    // Close menu when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!e.target.closest(`#delete-menu-${uuid}`) && !e.target.closest('button')) {
+                menu.classList.add('hidden');
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 100);
+}
+
+function deleteExam(uuid, deleteQuestions = false) {
+    const message = deleteQuestions 
+        ? 'Are you sure you want to delete this exam AND all its questions from the database? This will permanently remove the questions from your question bank. This action cannot be undone!' 
+        : 'Are you sure you want to delete this exam? Questions will remain in the question bank for other exams.';
+    
+    if (confirm(message)) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/exams/${uuid}`;
+        form.action = deleteQuestions ? `/exams/${uuid}/with-questions` : `/exams/${uuid}`;
         
         const csrfToken = document.createElement('input');
         csrfToken.type = 'hidden';
@@ -722,6 +757,9 @@ function deleteExam(uuid) {
         document.body.appendChild(form);
         form.submit();
     }
+    
+    // Hide the menu after action
+    document.getElementById(`delete-menu-${uuid}`).classList.add('hidden');
 }
 
 // Close modal when clicking outside

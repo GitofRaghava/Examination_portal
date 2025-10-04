@@ -67,10 +67,47 @@ class ExamController extends Controller
     // Delete exam
     public function destroy($uuid)
     {
-    $exam = Exam::where('uuid', $uuid)->firstOrFail();
-    $exam->delete();
+        $exam = Exam::where('uuid', $uuid)->firstOrFail();
+        
+        // Get questions assigned to this exam before deletion
+        $assignedQuestions = $exam->questions()->get(['questions.id', 'text', 'tags']);
+        $questionCount = $assignedQuestions->count();
+        
+        // Delete the exam (this also removes exam_questions relationships via cascade)
+        $exam->delete();
 
-    return redirect()->route('dashboard')->with('success', 'Exam deleted successfully!');
+        return redirect()->route('dashboard')->with('success', "Exam deleted successfully! ({$questionCount} questions unassigned)");
+    }
+    
+    /**
+     * Delete exam and all its related questions from database
+     * This is a destructive operation - use with caution!
+     */
+    public function destroyWithQuestions($uuid)
+    {
+        try {
+            $exam = Exam::where('uuid', $uuid)->firstOrFail();
+            
+            // Get questions assigned to this exam
+            $assignedQuestions = $exam->questions()->get(['questions.id']);
+            $questionIds = $assignedQuestions->pluck('id')->toArray();
+            $questionCount = count($questionIds);
+            
+            // Delete the exam first (removes relationships)
+            $exam->delete();
+            
+            // Delete the actual questions from database
+            if (!empty($questionIds)) {
+                DB::table('question_options')->whereIn('question_id', $questionIds)->delete();
+                DB::table('questions')->whereIn('id', $questionIds)->delete();
+            }
+            
+            return redirect()->route('dashboard')->with('success', 
+                "Exam and {$questionCount} questions deleted permanently from database!");
+                
+        } catch (\Exception $e) {
+            return redirect()->route('dashboard')->with('error', 'Error deleting exam: ' . $e->getMessage());
+        }
     }
 
     // NEW STEP 4 METHODS - EXAM MANAGEMENT
@@ -101,6 +138,28 @@ class ExamController extends Controller
             }
             if ($request->has('max_marks')) { // maximum marks per question
                 $filters['max_marks'] = (int) $request->input('max_marks');
+            }
+            
+            // CRITICAL FIX: Add automatic subject detection based on exam name
+            // This ensures subject-specific filtering works from dashboard too!
+            if (empty($filters['tags'])) {
+                $examName = strtolower($exam->name);
+                
+                if (str_contains($examName, 'python')) {
+                    $filters['tags'] = 'python';
+                } elseif (str_contains($examName, 'php')) {
+                    $filters['tags'] = 'php';
+                } elseif (str_contains($examName, 'node') || str_contains($examName, 'nodejs')) {
+                    $filters['tags'] = 'nodejs';
+                } elseif (str_contains($examName, 'javascript') || str_contains($examName, 'js')) {
+                    $filters['tags'] = 'javascript';
+                } elseif (str_contains($examName, 'java') && !str_contains($examName, 'javascript')) {
+                    $filters['tags'] = 'java';
+                } elseif (str_contains($examName, 'sql') || str_contains($examName, 'database')) {
+                    $filters['tags'] = 'sql';
+                } elseif (str_contains($examName, 'c++') || str_contains($examName, 'dsa') || str_contains($examName, 'data structures')) {
+                    $filters['tags'] = 'dsa';
+                }
             }
             
             // Use QuestionSelector to find optimal questions

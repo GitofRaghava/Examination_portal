@@ -77,10 +77,47 @@ class QuestionSelector
         }
         
         if (!empty($filters['tags'])) {
-            $query->where(function($q) use ($filters) {
-                $q->where('tags', 'LIKE', '%' . $filters['tags'] . '%')
-                  ->orWhere('text', 'LIKE', '%' . $filters['tags'] . '%')
-                  ->orWhere('text', 'LIKE', '%' . ucfirst($filters['tags']) . '%');
+            $subject = strtolower($filters['tags']);
+            $query->where(function($q) use ($subject) {
+                // Exact tag matching first (most precise)
+                $q->where('tags', 'LIKE', '%' . $subject . '%');
+                
+                // Subject-specific text matching to avoid cross-contamination
+                if ($subject === 'python') {
+                    $q->orWhere('text', 'LIKE', '%python%')
+                      ->orWhere('text', 'LIKE', '%Python%');
+                } elseif ($subject === 'php') {
+                    $q->orWhere('text', 'LIKE', '%PHP%')
+                      ->orWhere('text', 'LIKE', '%php%');
+                } elseif ($subject === 'nodejs') {
+                    $q->orWhere('text', 'LIKE', '%node%')
+                      ->orWhere('text', 'LIKE', '%Node%')
+                      ->orWhere('text', 'LIKE', '%nodejs%')
+                      ->orWhere('text', 'LIKE', '%Node.js%');
+                } elseif ($subject === 'javascript') {
+                    $q->orWhere('text', 'LIKE', '%javascript%')
+                      ->orWhere('text', 'LIKE', '%JavaScript%')
+                      ->orWhere('text', 'LIKE', '%JS %');
+                } elseif ($subject === 'java') {
+                    $q->orWhere(function($subQ) {
+                        $subQ->where('text', 'LIKE', '%java%')
+                             ->where('text', 'NOT LIKE', '%javascript%')
+                             ->where('text', 'NOT LIKE', '%JavaScript%');
+                    });
+                } elseif ($subject === 'sql') {
+                    $q->orWhere('text', 'LIKE', '%SQL%')
+                      ->orWhere('text', 'LIKE', '%sql%')
+                      ->orWhere('text', 'LIKE', '%database%')
+                      ->orWhere('text', 'LIKE', '%Database%');
+                } elseif ($subject === 'dsa') {
+                    $q->orWhere('text', 'LIKE', '%C++%')
+                      ->orWhere('text', 'LIKE', '%c++%')
+                      ->orWhere('text', 'LIKE', '%DSA%')
+                      ->orWhere('text', 'LIKE', '%dsa%')
+                      ->orWhere('text', 'LIKE', '%data structure%')
+                      ->orWhere('text', 'LIKE', '%algorithm%')
+                      ->orWhere('text', 'LIKE', '%Algorithm%');
+                }
             });
         }
         
